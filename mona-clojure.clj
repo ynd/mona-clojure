@@ -103,16 +103,6 @@
 
 ; mutate :: Polygon -> Map -> Polygon
 (defmethod mutate :Polygon [p settings] 
-  ; add-point :: Polygon -> Map -> Polygon
-  (defn add-point [p settings]
-    (assoc p :points (conj (:points p) (point (rand-int (:image-width settings))
-                                              (rand-int (:image-height settings))))))
-
-  ; remove-point :: Polygon -> Map -> Polygon
-  (defn remove-point [p settings]
-    (let [n (rand-int (count (:points p)))]
-      (assoc p :points (remove-item (:points p) n))))
-
   ; mutate-point :: Polygon -> Map -> Polygon
   (defn mutate-point [p settings]
     (let [n (rand-int (count (:points p)))]
@@ -121,12 +111,10 @@
   ; mutate-color :: Polygon -> Map -> Polygon
   (defn mutate-color [p settings] (assoc p :color (mutate (:color p) settings)))
   
-  (let [roulette (rand-int (if (> (count (:points p)) 3) 4 3))]
+  (let [roulette (rand-int 2)]
     (cond
-      (= 0 roulette) (add-point p settings)
-      (= 1 roulette) (mutate-point p settings)
-      (= 2 roulette) (mutate-color p settings)
-      (= 3 roulette) (remove-point p settings))))
+      (= 0 roulette) (mutate-point p settings)
+      (= 1  roulette) (mutate-color p settings))))
 
 ; mutate :: Program -> Map -> Program
 (defmethod mutate :Program [p settings]
