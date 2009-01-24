@@ -68,11 +68,11 @@
 ; ----------------------------------------------------------------------
 ; This sections define the primitives of the genetic algorithm.
 
-; program :: S-Expression -> Maybe Integer -> Program
+; program :: S-Expression -> Maybe Integer -> Maybe BufferedImage -> Program
 (defn program [code fitness image] {:type :Program :code code :fitness fitness :image image})
 
 ; initial-program :: Program
-(def initial-program (program '(fn [graphics] nil) nil nil))
+(def initial-program (program '(fn [graphics]) nil nil))
 
 ; program-header :: Program -> S-Expression
 (defn program-header [p] (take 2 (:code p)))
@@ -85,10 +85,10 @@
 
 ; mutate :: Color -> Map -> Color
 (defmethod mutate :Color [c settings]
-  (let [dr (int (* (:red c) (rand)))
-        dg (int (* (:green c) (rand)))
-        db (int (* (:blue c) (rand)))
-        da (int (* (:alpha c) (rand)))]
+  (let [dr (int (* (:red c) (random-double)))
+        dg (int (* (:green c) (random-double)))
+        db (int (* (:blue c) (random-double)))
+        da (int (* (:alpha c) (random-double)))]
     (assoc c :red (max (min (- (:red c) dr) 255) 0)
              :green (max (min (- (:green c) dg) 255) 0)
              :blue (max (min (- (:blue c) db) 255))
@@ -121,23 +121,22 @@
   ; add-polygon :: Program -> Map -> Program
   (defn add-polygon [p settings]
     (assoc p :code 
-             (concat (program-header p)
-                     (cons (list 'draw-polygon
-                                 (first (nth (:code initial-program) 1))
-                                 (polygon 
-                                   (color (rand-int 255) (rand-int 255) (rand-int 255) (rand-int 255))
-                                   (vec (map 
-                                          (fn [n] 
-                                            (point 
-                                              (rand-int (:image-width settings))
-                                              (rand-int (:image-height settings))))
-                                          (range 5)))))
-                           (program-expressions p)))
+             (concat (:code p)
+                     [(list 'draw-polygon
+                            (first (nth (:code initial-program) 1))
+                            (polygon
+                              (color (rand-int 255) (rand-int 255) (rand-int 255) (rand-int 255))
+                              (vec (map 
+                                 (fn [n]
+                                     (point 
+                                       (rand-int (:image-width settings))
+                                       (rand-int (:image-height settings))))
+                                 (range 5)))))])
              :fitness nil :image nil))
 
   ; remove-polygon :: Program -> Map -> Program
   (defn remove-polygon [p settings]
-    (let [n (rand-int (dec (count (program-expressions p))))]
+    (let [n (rand-int (count (program-expressions p)))]
       (assoc p :code (concat (program-header p)
                              (remove-item (program-expressions p) n))
                :fitness nil :image nil)))
@@ -145,7 +144,7 @@
   ; mutate-polygon :: Program -> Map -> Program
   (defn mutate-polygon [p settings]
     (let [expressions (program-expressions p)
-          n (rand-int (dec (count expressions)))
+          n (rand-int (count expressions))
           target (nth expressions n)]
       (assoc p :code
                (concat (program-header p)
@@ -156,15 +155,15 @@
                                            (mutate (nth target 2) settings))))
                :fitness nil :image nil)))
   
-  (let [polygon-count (dec (count (program-expressions p)))
+  (let [polygon-count (count (program-expressions p))
         roulette (cond
-                   (= polygon-count 0) 2
-                   (>= polygon-count (:max-polygons settings)) (rand-int 2)
-                   :else (rand-int 3))]
+                   (empty? (program-expressions p)) 4
+                   (>= polygon-count (:max-polygons settings)) (rand-int 4)
+                   :else (rand-int 5))]
     (cond
-      (= 0 roulette) (mutate-polygon p settings)
-      (= 1 roulette) (remove-polygon p settings)
-      (= 2 roulette) (add-polygon p settings))))
+      (> 3 roulette) (mutate-polygon p settings)
+      (= 3 roulette) (remove-polygon p settings)
+      (= 4 roulette) (add-polygon p settings))))
 
 ; fitness :: Program -> Map -> Program
 (defn fitness [individual settings]
@@ -174,7 +173,7 @@
                                        (:image-height settings)
                                        BufferedImage/TYPE_INT_ARGB)
           src-pixels (:source-pixels settings)]
-      ((eval (:code individual)) (. gen-image (createGraphics)))
+      (apply (eval (:code individual)) [(. gen-image (createGraphics))])
       (def gen-pixels (grab-pixels gen-image))
       (loop [i (int 0)
              lms (int 0)]
