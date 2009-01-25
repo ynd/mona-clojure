@@ -64,7 +64,7 @@
     (doto (new PixelGrabber image 0 0 w h pixels 0 w)
       (.grabPixels))
     pixels))
-  
+
 ; ----------------------------------------------------------------------
 ; This sections define the primitives of the genetic algorithm.
 
