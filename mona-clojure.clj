@@ -92,7 +92,7 @@
     (assoc c :red (max (min (- (:red c) dr) 255) 0)
              :green (max (min (- (:green c) dg) 255) 0)
              :blue (max (min (- (:blue c) db) 255) 0)
-             :alpha (max (min (- (:alpha c) da) 255)))) 0)
+             :alpha (max (min (- (:alpha c) da) 255) 0))))
 
 ; mutate :: Point -> Map -> Point
 (defmethod mutate :Point [p settings]
